@@ -13,8 +13,11 @@ export class DataService {
   }
 
   // TODO: Figure out how to call the local files.
-  public getJson(): Observable<MetaData[]> {
-    return this.http.get('data.json').map((res) => res.json());
+  public getJson(): Observable<Object[]> {
+    return this.http.get('/assets/data.json').map((res) => {
+      console.log(res.json());
+      return res.json();
+    });
   }
 
 

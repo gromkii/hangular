@@ -9,7 +9,7 @@ import { MetaData } from '../services/data.model';
   styleUrls: ['./scene.component.css']
 })
 export class SceneComponent implements OnInit, OnDestroy {
-  private data: MetaData[];
+  private data: Object[];
   private nodeSubscription: Subscription;
 
   constructor(private dataService: DataService) { }
@@ -17,7 +17,6 @@ export class SceneComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.nodeSubscription = this.dataService.getJson().subscribe( res => {
       this.data = res;
-      console.log(this.data);
     });
   }
 
