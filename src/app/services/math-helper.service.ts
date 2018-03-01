@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { glMatrix, mat4 } from 'gl-matrix';
+import { MeshNode } from '../scene/meshNode.model';
 
 @Injectable()
 export class MathHelperService {
@@ -60,25 +61,43 @@ export class MathHelperService {
     return glMatrix.toRadian(degree);
   }
 
-  public  decimalDegreeConversion(nodeString) {
+  public  decimalDegreeConversion(nodeString): number {
     // parse nodeString (GPSLat/GPSLng)
-    const node = nodeString.split(/[^0-9.A-Z]/g).filter(node => node !== "");
+    const node = nodeString.split(/[^0-9.A-Z]/g).filter((node) => node !== '');
 
     // convert parsed + split array of strings into decimal degrees.
-    const decimalDegree = (Number(node[0]) + (Number(node[1])/60) + (Number(node[2])/3600));
+    let decimalDegree = (Number(node[0]) + (Number(node[1]) / 60) + (Number(node[2]) / 3600));
 
-    // account for south of equator, west of 45th parralellelelellellelle
-    // switch(node[3]) {
-    //   case 'S':
-    //   case 'W':
-    //     decimalDegree *= -1;
-    //     break;
-    //
-    //   default:
-    //     break;
-    // }
+    // Account for Equator and 45th Parallel, not sure how necesary it is here.
+    switch(node[3]) {
+      case 'S':
+      case 'W':
+        decimalDegree *= -1;
+        break;
+
+      default:
+        break;
+    }
 
     return decimalDegree;
+  }
+
+  public getAveragePosition(meshes: MeshNode[]): any {
+    let x = 0, y = 0, z = 0;
+
+    meshes.map(mesh => {
+      x += mesh.x;
+      y += mesh.y;
+      z += mesh.z;
+    });
+
+    x /= meshes.length;
+    y /= meshes.length;
+    z /= meshes.length;
+
+    return {
+      x, y, z
+    };
   }
 
 }

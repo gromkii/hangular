@@ -5,7 +5,6 @@ import { Subscription } from 'rxjs/Subscription';
 import * as THREE from 'three';
 import OrbitControls from 'orbit-controls-es6';
 import { MeshNode } from './meshNode.model';
-import { AppComponent } from '../app.component';
 
 
 @Component({
@@ -51,7 +50,7 @@ export class SceneComponent implements OnInit, OnDestroy {
       const mesh: MeshNode = new MeshNode(lla.lat, lla.lng, lla.alt, coords.x, coords.y, coords.z, marker);
 
       mesh.marker.rotation.y = this.nodes[i].CameraPitch;
-      mesh.marker.rotation.z = this.nodes[i].CameraYaw;
+      mesh.marker.rotation.z = this.getCameraYaw(this.nodes[i].CameraYaw);
 
       meshes.push(mesh);
     }
@@ -60,29 +59,8 @@ export class SceneComponent implements OnInit, OnDestroy {
   }
 
   private createMarker() {
-    const geometry = new THREE.Geometry();
-
-    geometry.vertices = [
-      new THREE.Vector3( 0, 0, 0 ),
-      new THREE.Vector3( 0, 1, 0 ),
-      new THREE.Vector3( 1, 1, 0 ),
-      new THREE.Vector3( 1, 0, 0 ),
-      new THREE.Vector3( 0.5, 0.5, 1 )
-    ];
-
-    geometry.faces = [
-      new THREE.Face3( 0, 1, 2 ),
-      new THREE.Face3( 0, 2, 3 ),
-      new THREE.Face3( 1, 0, 4 ),
-      new THREE.Face3( 2, 1, 4 ),
-      new THREE.Face3( 3, 2, 4 ),
-      new THREE.Face3( 0, 3, 4 )
-    ];
-
-    geometry.scaleFactor = .5;
-
-    const material = new THREE.MeshPhongMaterial({color: 0xccee44});
-    material.flatShading = true;
+    const geometry = new THREE.CylinderGeometry( 0, .5, 1.5, .2, .5 );
+    const material = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } );
 
 
     return new THREE.Mesh( geometry, material );
@@ -104,7 +82,7 @@ export class SceneComponent implements OnInit, OnDestroy {
 
     this.camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .01, 10000);
 
-    const avg = this.getAveragePosition();
+    const avg = this.mathService.getAveragePosition(this.meshes);
 
     this.camera.position.x = avg.x;
     this.camera.position.y = avg.y + 25;
@@ -173,28 +151,19 @@ export class SceneComponent implements OnInit, OnDestroy {
 
   }
 
-  private getAveragePosition() {
-    let x = 0, y = 0, z = 0;
-
-    this.meshes.map(mesh => {
-      x += mesh.x;
-      y += mesh.y;
-      z += mesh.z;
-    });
-
-    x /= this.meshes.length;
-    y /= this.meshes.length;
-    z /= this.meshes.length;
-
-    return {
-      x, y, z
-    };
-  }
-
   private addMarkersToScene(): void {
     this.meshes.map(mesh => {
       this.scene.add(mesh.marker);
       mesh.marker.position.set(mesh.x, mesh.y, mesh.z);
     });
+  }
+
+
+  private getCameraYaw(yaw: string): number {
+    if (String(yaw).charAt(0) === '+') {
+      return Number(yaw.substr(1));
+    }
+
+    return Number(yaw);
   }
 }
