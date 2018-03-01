@@ -4,6 +4,8 @@ import { MathHelperService} from '../services/math-helper.service';
 import { Subscription } from 'rxjs/Subscription';
 import * as THREE from 'three';
 import OrbitControls from 'orbit-controls-es6';
+import { MeshNode } from './meshNode.model';
+import { AppComponent } from '../app.component';
 
 
 @Component({
@@ -13,11 +15,12 @@ import OrbitControls from 'orbit-controls-es6';
 })
 export class SceneComponent implements OnInit, OnDestroy {
   private nodes: any[];
+  private meshes: MeshNode[];
   private nodeSubscription: Subscription;
-  private camera;
-  private scene;
-  private renderer;
-  private controls;
+  private camera: THREE.Camera;
+  private scene: THREE.Scene;
+  private renderer: THREE.WebGLRenderer;
+  private controls: THREE.OrbitControls;
 
   constructor(
     private dataService: DataService,
@@ -27,9 +30,8 @@ export class SceneComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.nodeSubscription = this.dataService.getJson().subscribe( res => {
       this.nodes = res;
-      this.nodes = this.meshCreator();
+      this.meshes = this.meshCreator();
       this.init();
-      this.animate();
       this.addMarkersToScene();
     });
   }
@@ -38,31 +40,20 @@ export class SceneComponent implements OnInit, OnDestroy {
     this.nodeSubscription.unsubscribe();
   }
 
-  private meshCreator() {
+  private meshCreator(): MeshNode[] {
     const count = this.nodes.length;
     const meshes = [];
 
     for (let i = 0; i < count; i++) {
-      let obj: any = {};
-      // Create new mesh using createMarker()
-      obj.marker = this.createMarker();
+      const marker = this.createMarker();
+      const lla = this.buildCoordinates(this.nodes[i]);
+      const coords = this.mathService.topocentric_from_lla(lla.lat, lla.lng, lla.alt, 0, 0, 0);
+      const mesh: MeshNode = new MeshNode(lla.lat, lla.lng, lla.alt, coords.x, coords.y, coords.z, marker);
 
-      obj.marker.rotation.y = this.nodes[i].CameraPitch;
-      obj.marker.rotation.z = this.nodes[i].CameraYaw;
+      mesh.marker.rotation.y = this.nodes[i].CameraPitch;
+      mesh.marker.rotation.z = this.nodes[i].CameraYaw;
 
-      // call buildCoordiates to return lat, lng, alt.
-      obj = {
-        ...obj,
-        ...this.buildCoordinates(this.nodes[i])
-      };
-
-      // create xyz coordinates based on lat, lng, alt. (ref = 0?)
-      obj = {
-        ...obj,
-        ...this.mathService.topocentric_from_lla(obj.lat, obj.lng, obj.alt, 0, 0, 0)
-      };
-
-      meshes.push(obj);
+      meshes.push(mesh);
     }
 
     return meshes;
@@ -113,7 +104,7 @@ export class SceneComponent implements OnInit, OnDestroy {
 
     this.camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, .01, 10000);
 
-    let avg = this.getAveragePosition();
+    const avg = this.getAveragePosition();
 
     this.camera.position.x = avg.x;
     this.camera.position.y = avg.y + 25;
@@ -127,9 +118,12 @@ export class SceneComponent implements OnInit, OnDestroy {
 
     this.scene = new THREE.Scene();
 
-    this.renderer = new THREE.WebGLRenderer( { antialias: true } );
+    this.renderer = new THREE.WebGLRenderer( { antialias: true, alpha: true } );
     this.renderer.setSize( window.innerWidth, window.innerHeight );
+
+    // TODO: Attach this to viewChild in scene HTML
     document.body.appendChild( this.renderer.domElement );
+    this.renderer.setClearColor( 0x000000, 0 );
 
     this.scene.background = new THREE.Color().setHSL( 0.6, 0, 1 );
     this.scene.fog = new THREE.Fog( this.scene.background, 1, 5000 );
@@ -162,32 +156,35 @@ export class SceneComponent implements OnInit, OnDestroy {
     const dirLightHeper = new THREE.DirectionalLightHelper( dirLight, 10 )
     this.scene.add( dirLightHeper );
 
-
-  }
-
-  private animate() {
-
-    requestAnimationFrame(this.animate);
-    this.controls.update();
     this.render();
+
+
   }
 
-  private render() {
-    this.renderer.render(this.scene, this.camera);
+  render() {
+
+    const self = this;
+
+    (function render(){
+      requestAnimationFrame(render);
+      self.controls.update();
+      self.renderer.render(self.scene, self.camera);
+    }());
+
   }
 
   private getAveragePosition() {
     let x = 0, y = 0, z = 0;
 
-    this.nodes.map(mesh => {
+    this.meshes.map(mesh => {
       x += mesh.x;
       y += mesh.y;
       z += mesh.z;
     });
 
-    x /= this.nodes.length;
-    y /= this.nodes.length;
-    z /= this.nodes.length;
+    x /= this.meshes.length;
+    y /= this.meshes.length;
+    z /= this.meshes.length;
 
     return {
       x, y, z
@@ -195,7 +192,7 @@ export class SceneComponent implements OnInit, OnDestroy {
   }
 
   private addMarkersToScene(): void {
-    this.nodes.map(mesh => {
+    this.meshes.map(mesh => {
       this.scene.add(mesh.marker);
       mesh.marker.position.set(mesh.x, mesh.y, mesh.z);
     });
