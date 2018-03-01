@@ -2,17 +2,20 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
-import { SceneComponentComponent } from './scene-component/scene-component.component';
+import { SceneComponent } from './scene/scene.component';
+import {DataService} from "./services/data.service";
+import {HttpModule} from "@angular/http";
 
 @NgModule({
   declarations: [
     AppComponent,
-    SceneComponentComponent
+    SceneComponent,
   ],
   imports: [
-    BrowserModule
+    BrowserModule,
+    HttpModule
   ],
-  providers: [],
+  providers: [DataService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
