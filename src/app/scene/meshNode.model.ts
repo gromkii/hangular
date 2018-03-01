@@ -1,4 +1,4 @@
-import { Mesh } from 'THREE';
+import { Mesh } from 'three';
 
 export class MeshNode {
   constructor(
