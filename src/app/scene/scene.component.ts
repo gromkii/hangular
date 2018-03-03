@@ -49,9 +49,8 @@ export class SceneComponent implements OnInit, OnDestroy {
       const coords = this.mathService.topocentric_from_lla(lla.lat, lla.lng, lla.alt, 0, 0, 0);
       const mesh: MeshNode = new MeshNode(lla.lat, lla.lng, lla.alt, coords.x, coords.y, coords.z, marker);
 
-      mesh.marker.rotateY(this.mathService.degreeToRadian(this.nodes[i].CameraPitch));
-      mesh.marker.rotateX(this.mathService.degreeToRadian(this.getCameraYaw(this.nodes[i].CameraYaw)));
-      mesh.marker.rotateZ(0);
+      mesh.marker.rotation.y = this.nodes[i].CameraPitch;
+      mesh.marker.rotation.z = this.getCameraYaw(this.nodes[i].CameraYaw);
 
       meshes.push(mesh);
     }
@@ -164,6 +163,7 @@ export class SceneComponent implements OnInit, OnDestroy {
     if (String(yaw).charAt(0) === '+') {
       return Number(yaw.substr(1));
     }
+
     return Number(yaw);
   }
 }
